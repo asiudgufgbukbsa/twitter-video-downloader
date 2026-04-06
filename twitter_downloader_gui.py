@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """
 Twitter/X Video Downloader GUI
-A graphical user interface for Twitter/X video and bookmark downloading
-
-Twitter/X 视频下载器图形界面
-用于下载 Twitter/X 视频和书签的图形用户界面
+A modern, clean graphical user interface
 """
 
 import os
@@ -12,9 +9,8 @@ import sys
 import threading
 import asyncio
 import queue
-import webbrowser
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
 
@@ -23,22 +19,40 @@ try:
     from twitter_video_downloader import TwitterVideoDownloader, read_urls_from_file
 except ImportError:
     print("Error: Cannot import twitter_video_downloader.py")
-    print("错误: 无法导入 twitter_video_downloader.py")
     sys.exit(1)
 
 try:
     from twitter_bookmark_downloader import TwitterBookmarkDownloader
 except ImportError:
     print("Error: Cannot import twitter_bookmark_downloader.py")
-    print("错误: 无法导入 twitter_bookmark_downloader.py")
     sys.exit(1)
 
 
-class TextRedirector:
-    """Redirect stdout/stderr to a tkinter text widget / 将标准输出重定向到 tkinter 文本控件"""
+class ModernStyle:
+    """Modern color scheme and fonts"""
+    # Colors
+    BG_PRIMARY = "#ffffff"
+    BG_SECONDARY = "#f8f9fa"
+    BG_TERTIARY = "#e9ecef"
+    ACCENT = "#1da1f2"  # Twitter blue
+    ACCENT_HOVER = "#1a91da"
+    TEXT_PRIMARY = "#14171a"
+    TEXT_SECONDARY = "#657786"
+    SUCCESS = "#17bf63"
+    ERROR = "#e0245e"
+    WARNING = "#ffad1f"
+    BORDER = "#e1e8ed"
 
-    def __init__(self, text_widget, queue_obj):
-        self.text_widget = text_widget
+    # Fonts
+    FONT_FAMILY = "Segoe UI"
+    FONT_SIZE_TITLE = 16
+    FONT_SIZE_NORMAL = 10
+    FONT_SIZE_SMALL = 9
+
+
+class TextRedirector:
+    """Redirect stdout to tkinter text widget"""
+    def __init__(self, queue_obj):
         self.queue = queue_obj
 
     def write(self, string):
@@ -49,259 +63,368 @@ class TextRedirector:
 
 
 class TwitterDownloaderGUI:
-    """Main GUI Application / 主图形界面应用"""
+    """Main GUI Application with modern design"""
 
     def __init__(self, root):
         self.root = root
-        self.root.title("Twitter/X Video Downloader / Twitter/X 视频下载器")
-        self.root.geometry("800x700")
-        self.root.minsize(700, 600)
+        self.root.title("Twitter Video Downloader")
+        self.root.geometry("650x700")
+        self.root.minsize(550, 550)
+        self.root.configure(bg=ModernStyle.BG_PRIMARY)
 
-        # Output queue for log messages / 日志消息输出队列
+        # Center window
+        self._center_window()
+
+        # State
         self.log_queue = queue.Queue()
-
-        # Download state / 下载状态
         self.is_downloading = False
         self.download_thread = None
-
-        # Default settings / 默认设置
         self.default_output_dir = str(Path.cwd() / "twitter_videos")
+        self.original_stdout = sys.stdout
 
-        # Setup UI / 设置界面
-        self.setup_ui()
+        # Setup
+        self._setup_styles()
+        self._setup_ui()
+        self._update_log_display()
 
-        # Start log update loop / 开始日志更新循环
-        self.update_log_display()
+    def _center_window(self):
+        """Center the window on screen"""
+        self.root.update_idletasks()
+        w, h = 650, 700
+        sw = self.root.winfo_screenwidth()
+        sh = self.root.winfo_screenheight()
+        x = (sw - w) // 2
+        y = (sh - h) // 2
+        self.root.geometry(f"{w}x{h}+{x}+{y}")
 
-    def setup_ui(self):
-        """Setup the main user interface / 设置主用户界面"""
+    def _setup_styles(self):
+        """Configure ttk styles"""
+        style = ttk.Style()
 
-        # Create notebook for tabs / 创建标签页笔记本
-        self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # Frame styles
+        style.configure("Card.TFrame", background=ModernStyle.BG_PRIMARY)
+        style.configure("Secondary.TFrame", background=ModernStyle.BG_SECONDARY)
 
-        # Video Downloader Tab / 视频下载标签页
-        self.video_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.video_frame, text="  Video Download / 视频下载  ")
-        self.setup_video_tab()
+        # Label styles
+        style.configure("Title.TLabel",
+                       font=(ModernStyle.FONT_FAMILY, ModernStyle.FONT_SIZE_TITLE, "bold"),
+                       background=ModernStyle.BG_PRIMARY,
+                       foreground=ModernStyle.TEXT_PRIMARY)
 
-        # Bookmark Downloader Tab / 书签下载标签页
-        self.bookmark_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.bookmark_frame, text="  Bookmark Download / 书签下载  ")
-        self.setup_bookmark_tab()
+        style.configure("Subtitle.TLabel",
+                       font=(ModernStyle.FONT_FAMILY, ModernStyle.FONT_SIZE_NORMAL),
+                       background=ModernStyle.BG_PRIMARY,
+                       foreground=ModernStyle.TEXT_SECONDARY)
 
-        # Bottom controls / 底部控件
-        self.setup_bottom_controls()
+        style.configure("Setting.TLabel",
+                       font=(ModernStyle.FONT_FAMILY, ModernStyle.FONT_SIZE_NORMAL),
+                       background=ModernStyle.BG_PRIMARY,
+                       foreground=ModernStyle.TEXT_PRIMARY)
 
-    def setup_video_tab(self):
-        """Setup video downloader tab / 设置视频下载标签页"""
+        style.configure("Info.TLabel",
+                       font=(ModernStyle.FONT_FAMILY, ModernStyle.FONT_SIZE_SMALL),
+                       background=ModernStyle.BG_SECONDARY,
+                       foreground=ModernStyle.TEXT_SECONDARY)
 
-        # Main container with padding / 带内边距的主容器
-        main_frame = ttk.Frame(self.video_frame, padding="10")
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        # Button styles
+        style.configure("Accent.TButton",
+                       font=(ModernStyle.FONT_FAMILY, ModernStyle.FONT_SIZE_NORMAL, "bold"),
+                       padding=(20, 10))
 
-        # URL input section / URL 输入区域
-        url_frame = ttk.LabelFrame(main_frame, text="Tweet URLs / 推文链接", padding="10")
-        url_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        style.configure("Small.TButton",
+                       font=(ModernStyle.FONT_FAMILY, ModernStyle.FONT_SIZE_SMALL),
+                       padding=(10, 5))
 
-        ttk.Label(url_frame, text="Enter URLs (one per line) / 输入链接（每行一个）:").pack(anchor=tk.W)
+        # Notebook styles
+        style.configure("TNotebook", background=ModernStyle.BG_PRIMARY)
+        style.configure("TNotebook.Tab",
+                       font=(ModernStyle.FONT_FAMILY, ModernStyle.FONT_SIZE_NORMAL),
+                       padding=(20, 10))
 
-        self.url_text = scrolledtext.ScrolledText(url_frame, height=8, wrap=tk.WORD)
-        self.url_text.pack(fill=tk.BOTH, expand=True, pady=5)
+        # Entry styles
+        style.configure("TEntry",
+                       fieldbackground=ModernStyle.BG_SECONDARY,
+                       bordercolor=ModernStyle.BORDER)
 
-        # URL file selection / URL 文件选择
-        file_frame = ttk.Frame(url_frame)
-        file_frame.pack(fill=tk.X, pady=5)
+        # Radiobutton styles
+        style.configure("TRadiobutton",
+                       font=(ModernStyle.FONT_FAMILY, ModernStyle.FONT_SIZE_NORMAL),
+                       background=ModernStyle.BG_PRIMARY)
 
-        ttk.Label(file_frame, text="Or load from file / 或从文件加载:").pack(side=tk.LEFT)
-        ttk.Button(file_frame, text="Browse / 浏览...", command=self.load_urls_from_file).pack(side=tk.LEFT, padx=10)
+        # Checkbutton styles
+        style.configure("TCheckbutton",
+                       font=(ModernStyle.FONT_FAMILY, ModernStyle.FONT_SIZE_SMALL),
+                       background=ModernStyle.BG_PRIMARY)
 
-        self.url_file_label = ttk.Label(file_frame, text="", foreground="gray")
-        self.url_file_label.pack(side=tk.LEFT)
+        # LabelFrame styles
+        style.configure("Card.TLabelframe",
+                       background=ModernStyle.BG_PRIMARY)
+        style.configure("Card.TLabelframe.Label",
+                       font=(ModernStyle.FONT_FAMILY, ModernStyle.FONT_SIZE_NORMAL, "bold"),
+                       background=ModernStyle.BG_PRIMARY,
+                       foreground=ModernStyle.TEXT_PRIMARY)
 
-        # Settings section / 设置区域
-        settings_frame = ttk.LabelFrame(main_frame, text="Settings / 设置", padding="10")
-        settings_frame.pack(fill=tk.X, pady=(0, 10))
+    def _setup_ui(self):
+        """Setup the main user interface"""
+        # Main container
+        main_container = ttk.Frame(self.root, style="Card.TFrame")
+        main_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
-        # Output directory / 输出目录
-        dir_frame = ttk.Frame(settings_frame)
-        dir_frame.pack(fill=tk.X, pady=5)
+        # Header
+        self._create_header(main_container)
 
-        ttk.Label(dir_frame, text="Output Directory / 输出目录:").pack(side=tk.LEFT)
+        # Notebook (tabs)
+        self.notebook = ttk.Notebook(main_container)
+        self.notebook.pack(fill=tk.BOTH, expand=True, pady=(15, 0))
+
+        # Create tabs
+        self._create_video_tab()
+        self._create_bookmark_tab()
+
+        # Log area
+        self._create_log_area(main_container)
+
+        # Footer
+        self._create_footer(main_container)
+
+    def _create_header(self, parent):
+        """Create header section"""
+        header = ttk.Frame(parent, style="Card.TFrame")
+        header.pack(fill=tk.X)
+
+        # Title with icon
+        title_frame = ttk.Frame(header, style="Card.TFrame")
+        title_frame.pack(fill=tk.X)
+
+        ttk.Label(title_frame, text="🐦", font=("Segoe UI Emoji", 24)).pack(side=tk.LEFT)
+        ttk.Label(title_frame, text="  Twitter Video Downloader", style="Title.TLabel").pack(side=tk.LEFT)
+
+        # Status
+        self.status_var = tk.StringVar(value="Ready")
+        ttk.Label(header, textvariable=self.status_var, style="Subtitle.TLabel").pack(anchor=tk.W, pady=(5, 0))
+
+    def _create_video_tab(self):
+        """Create video download tab"""
+        frame = ttk.Frame(self.notebook, style="Card.TFrame", padding=15)
+        self.notebook.add(frame, text="  📹 Video URL  ")
+
+        # URL Input Section
+        url_section = ttk.LabelFrame(frame, text="Tweet URLs", style="Card.TLabelframe", padding=10)
+        url_section.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+        # URL text area with placeholder
+        self.url_text = scrolledtext.ScrolledText(
+            url_section,
+            height=6,
+            wrap=tk.WORD,
+            font=(ModernStyle.FONT_FAMILY, ModernStyle.FONT_SIZE_NORMAL),
+            bg=ModernStyle.BG_SECONDARY,
+            relief=tk.FLAT,
+            borderwidth=0
+        )
+        self.url_text.pack(fill=tk.BOTH, expand=True)
+        self.url_text.insert(tk.END, "Paste tweet URLs here, one per line...\n在此粘贴推文链接，每行一个...")
+        self.url_text.configure(foreground=ModernStyle.TEXT_SECONDARY)
+        self.url_text.bind("<FocusIn>", self._on_url_focus_in)
+        self.url_text.bind("<FocusOut>", self._on_url_focus_out)
+
+        # File load button
+        file_frame = ttk.Frame(url_section, style="Card.TFrame")
+        file_frame.pack(fill=tk.X, pady=(10, 0))
+
+        ttk.Button(file_frame, text="📁 Load from file", style="Small.TButton",
+                  command=self.load_urls_from_file).pack(side=tk.LEFT)
+        self.url_file_label = ttk.Label(file_frame, text="", style="Info.TLabel")
+        self.url_file_label.pack(side=tk.LEFT, padx=10)
+
+        # Settings Section
+        settings_section = ttk.LabelFrame(frame, text="Settings", style="Card.TLabelframe", padding=10)
+        settings_section.pack(fill=tk.X, pady=(0, 15))
+
+        # Output directory
+        dir_row = ttk.Frame(settings_section, style="Card.TFrame")
+        dir_row.pack(fill=tk.X, pady=5)
+
+        ttk.Label(dir_row, text="📁 Save to:", style="Setting.TLabel").pack(side=tk.LEFT)
         self.video_output_var = tk.StringVar(value=self.default_output_dir)
-        ttk.Entry(dir_frame, textvariable=self.video_output_var, width=40).pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
-        ttk.Button(dir_frame, text="Browse / 浏览...", command=lambda: self.browse_directory(self.video_output_var)).pack(side=tk.LEFT)
+        ttk.Entry(dir_row, textvariable=self.video_output_var, width=40).pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
+        ttk.Button(dir_row, text="Browse", style="Small.TButton",
+                  command=lambda: self._browse_directory(self.video_output_var)).pack(side=tk.LEFT)
 
-        # Delay setting / 延迟设置
-        delay_frame = ttk.Frame(settings_frame)
-        delay_frame.pack(fill=tk.X, pady=5)
+        # Delay
+        delay_row = ttk.Frame(settings_section, style="Card.TFrame")
+        delay_row.pack(fill=tk.X, pady=5)
 
-        ttk.Label(delay_frame, text="Delay between downloads (sec) / 下载间隔（秒）:").pack(side=tk.LEFT)
+        ttk.Label(delay_row, text="⏱ Delay (sec):", style="Setting.TLabel").pack(side=tk.LEFT)
         self.video_delay_var = tk.StringVar(value="0.5")
-        ttk.Entry(delay_frame, textvariable=self.video_delay_var, width=10).pack(side=tk.LEFT, padx=10)
+        ttk.Entry(delay_row, textvariable=self.video_delay_var, width=8).pack(side=tk.LEFT, padx=10)
 
-        # Start button / 开始按钮
-        btn_frame = ttk.Frame(main_frame)
-        btn_frame.pack(fill=tk.X, pady=10)
+        # Action buttons
+        btn_frame = ttk.Frame(frame, style="Card.TFrame")
+        btn_frame.pack(fill=tk.X)
 
-        self.video_start_btn = ttk.Button(btn_frame, text="Start Download / 开始下载", command=self.start_video_download)
-        self.video_start_btn.pack(side=tk.LEFT, padx=5)
+        self.video_start_btn = ttk.Button(btn_frame, text="▶ Start Download",
+                                          style="Accent.TButton", command=self.start_video_download)
+        self.video_start_btn.pack(side=tk.LEFT, padx=(0, 10))
 
-        self.video_stop_btn = ttk.Button(btn_frame, text="Stop / 停止", command=self.stop_download, state=tk.DISABLED)
-        self.video_stop_btn.pack(side=tk.LEFT, padx=5)
+        self.video_stop_btn = ttk.Button(btn_frame, text="⏹ Stop",
+                                         style="Small.TButton", command=self.stop_download, state=tk.DISABLED)
+        self.video_stop_btn.pack(side=tk.LEFT)
 
-    def setup_bookmark_tab(self):
-        """Setup bookmark downloader tab / 设置书签下载标签页"""
+    def _create_bookmark_tab(self):
+        """Create bookmark download tab"""
+        frame = ttk.Frame(self.notebook, style="Card.TFrame", padding=15)
+        self.notebook.add(frame, text="  🔖 Bookmarks  ")
 
-        # Main container with padding / 带内边距的主容器
-        main_frame = ttk.Frame(self.bookmark_frame, padding="10")
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        # Info Section
+        info_section = ttk.LabelFrame(frame, text="How to use", style="Card.TLabelframe", padding=10)
+        info_section.pack(fill=tk.X, pady=(0, 10))
 
-        # Info section / 信息区域
-        info_frame = ttk.LabelFrame(main_frame, text="Instructions / 使用说明", padding="10")
-        info_frame.pack(fill=tk.X, pady=(0, 10))
+        info_text = (
+            "1️⃣  Login to Twitter/X in Chrome or Edge\n"
+            "2️⃣  Close all browser windows before starting\n"
+            "3️⃣  Click Start and wait for browser to open\n"
+            "4️⃣  Login if needed, then press Enter in terminal"
+        )
+        ttk.Label(info_section, text=info_text, style="Info.TLabel", justify=tk.LEFT).pack(anchor=tk.W)
 
-        info_text = """This tool downloads videos from your Twitter/X bookmarks.
-此工具从你的 Twitter/X 书签中下载视频。
+        # Settings Section
+        settings_section = ttk.LabelFrame(frame, text="Settings", style="Card.TLabelframe", padding=10)
+        settings_section.pack(fill=tk.X, pady=(0, 15))
 
-1. Make sure you are logged into Twitter/X in Chrome or Edge
-   确保你已在 Chrome 或 Edge 浏览器中登录 Twitter/X
-2. Close all Chrome/Edge windows before starting
-   开始前请关闭所有 Chrome/Edge 窗口
-3. Click 'Start Download' and wait for the browser to open
-   点击"开始下载"，等待浏览器打开
-4. If not logged in, login in the browser window and press Enter
-   如果未登录，在浏览器窗口中登录后按回车"""
+        # Output directory
+        dir_row = ttk.Frame(settings_section, style="Card.TFrame")
+        dir_row.pack(fill=tk.X, pady=5)
 
-        ttk.Label(info_frame, text=info_text, justify=tk.LEFT).pack(anchor=tk.W)
-
-        # Settings section / 设置区域
-        settings_frame = ttk.LabelFrame(main_frame, text="Settings / 设置", padding="10")
-        settings_frame.pack(fill=tk.X, pady=(0, 10))
-
-        # Output directory / 输出目录
-        dir_frame = ttk.Frame(settings_frame)
-        dir_frame.pack(fill=tk.X, pady=5)
-
-        ttk.Label(dir_frame, text="Output Directory / 输出目录:").pack(side=tk.LEFT)
+        ttk.Label(dir_row, text="📁 Save to:", style="Setting.TLabel").pack(side=tk.LEFT)
         self.bookmark_output_var = tk.StringVar(value=self.default_output_dir)
-        ttk.Entry(dir_frame, textvariable=self.bookmark_output_var, width=40).pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
-        ttk.Button(dir_frame, text="Browse / 浏览...", command=lambda: self.browse_directory(self.bookmark_output_var)).pack(side=tk.LEFT)
+        ttk.Entry(dir_row, textvariable=self.bookmark_output_var, width=40).pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
+        ttk.Button(dir_row, text="Browse", style="Small.TButton",
+                  command=lambda: self._browse_directory(self.bookmark_output_var)).pack(side=tk.LEFT)
 
-        # Browser type / 浏览器类型
-        browser_frame = ttk.Frame(settings_frame)
-        browser_frame.pack(fill=tk.X, pady=5)
+        # Browser selection
+        browser_row = ttk.Frame(settings_section, style="Card.TFrame")
+        browser_row.pack(fill=tk.X, pady=5)
 
-        ttk.Label(browser_frame, text="Browser / 浏览器:").pack(side=tk.LEFT)
+        ttk.Label(browser_row, text="🌐 Browser:", style="Setting.TLabel").pack(side=tk.LEFT)
         self.browser_var = tk.StringVar(value="auto")
-        ttk.Radiobutton(browser_frame, text="Auto / 自动", variable=self.browser_var, value="auto").pack(side=tk.LEFT, padx=10)
-        ttk.Radiobutton(browser_frame, text="Chrome", variable=self.browser_var, value="chrome").pack(side=tk.LEFT, padx=5)
-        ttk.Radiobutton(browser_frame, text="Edge", variable=self.browser_var, value="edge").pack(side=tk.LEFT, padx=5)
+        ttk.Radiobutton(browser_row, text="Auto", variable=self.browser_var, value="auto").pack(side=tk.LEFT, padx=10)
+        ttk.Radiobutton(browser_row, text="Chrome", variable=self.browser_var, value="chrome").pack(side=tk.LEFT, padx=5)
+        ttk.Radiobutton(browser_row, text="Edge", variable=self.browser_var, value="edge").pack(side=tk.LEFT, padx=5)
 
-        # Limits frame / 限制设置框架
-        limits_frame = ttk.Frame(settings_frame)
-        limits_frame.pack(fill=tk.X, pady=5)
+        # Limits row 1
+        limits_row1 = ttk.Frame(settings_section, style="Card.TFrame")
+        limits_row1.pack(fill=tk.X, pady=5)
 
-        # Max tweets / 最大推文数
-        ttk.Label(limits_frame, text="Max tweets / 最大推文数:").pack(side=tk.LEFT)
+        ttk.Label(limits_row1, text="📊 Max tweets:", style="Setting.TLabel").pack(side=tk.LEFT)
         self.max_tweets_var = tk.StringVar(value="")
-        ttk.Entry(limits_frame, textvariable=self.max_tweets_var, width=8).pack(side=tk.LEFT, padx=5)
+        ttk.Entry(limits_row1, textvariable=self.max_tweets_var, width=8).pack(side=tk.LEFT, padx=(5, 20))
 
-        # Max scrolls / 最大滚动次数
-        ttk.Label(limits_frame, text="Max scrolls / 最大滚动次数:").pack(side=tk.LEFT, padx=(20, 0))
+        ttk.Label(limits_row1, text="🔄 Max scrolls:", style="Setting.TLabel").pack(side=tk.LEFT)
         self.max_scrolls_var = tk.StringVar(value="")
-        ttk.Entry(limits_frame, textvariable=self.max_scrolls_var, width=8).pack(side=tk.LEFT, padx=5)
+        ttk.Entry(limits_row1, textvariable=self.max_scrolls_var, width=8).pack(side=tk.LEFT, padx=5)
 
-        # More settings row / 更多设置行
-        more_frame = ttk.Frame(settings_frame)
-        more_frame.pack(fill=tk.X, pady=5)
+        # Limits row 2
+        limits_row2 = ttk.Frame(settings_section, style="Card.TFrame")
+        limits_row2.pack(fill=tk.X, pady=5)
 
-        # Max video size / 最大视频大小
-        ttk.Label(more_frame, text="Max video size (MB) / 最大视频大小:").pack(side=tk.LEFT)
+        ttk.Label(limits_row2, text="💾 Max size (MB):", style="Setting.TLabel").pack(side=tk.LEFT)
         self.max_size_var = tk.StringVar(value="1500")
-        ttk.Entry(more_frame, textvariable=self.max_size_var, width=8).pack(side=tk.LEFT, padx=5)
+        ttk.Entry(limits_row2, textvariable=self.max_size_var, width=8).pack(side=tk.LEFT, padx=(5, 20))
 
-        # Headless mode / 无头模式
         self.headless_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(more_frame, text="Headless mode (no browser window) / 无头模式", variable=self.headless_var).pack(side=tk.LEFT, padx=20)
+        ttk.Checkbutton(limits_row2, text="Hide browser window", variable=self.headless_var).pack(side=tk.LEFT)
 
-        # Start button / 开始按钮
-        btn_frame = ttk.Frame(main_frame)
-        btn_frame.pack(fill=tk.X, pady=10)
+        # Action buttons
+        btn_frame = ttk.Frame(frame, style="Card.TFrame")
+        btn_frame.pack(fill=tk.X)
 
-        self.bookmark_start_btn = ttk.Button(btn_frame, text="Start Download / 开始下载", command=self.start_bookmark_download)
-        self.bookmark_start_btn.pack(side=tk.LEFT, padx=5)
+        self.bookmark_start_btn = ttk.Button(btn_frame, text="▶ Start Download",
+                                             style="Accent.TButton", command=self.start_bookmark_download)
+        self.bookmark_start_btn.pack(side=tk.LEFT, padx=(0, 10))
 
-        self.bookmark_stop_btn = ttk.Button(btn_frame, text="Stop / 停止", command=self.stop_download, state=tk.DISABLED)
-        self.bookmark_stop_btn.pack(side=tk.LEFT, padx=5)
+        self.bookmark_stop_btn = ttk.Button(btn_frame, text="⏹ Stop",
+                                            style="Small.TButton", command=self.stop_download, state=tk.DISABLED)
+        self.bookmark_stop_btn.pack(side=tk.LEFT)
 
-    def setup_bottom_controls(self):
-        """Setup bottom controls (log area and action buttons) / 设置底部控件（日志区域和操作按钮）"""
+    def _create_log_area(self, parent):
+        """Create log output area"""
+        log_section = ttk.LabelFrame(parent, text="📝 Log", style="Card.TLabelframe", padding=10)
+        log_section.pack(fill=tk.BOTH, expand=True, pady=(15, 0))
 
-        # Log area / 日志区域
-        log_frame = ttk.LabelFrame(self.root, text="Log / 日志", padding="5")
-        log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
-
-        self.log_text = scrolledtext.ScrolledText(log_frame, height=10, wrap=tk.WORD, state=tk.DISABLED)
+        self.log_text = scrolledtext.ScrolledText(
+            log_section,
+            height=8,
+            wrap=tk.WORD,
+            font=("Consolas", ModernStyle.FONT_SIZE_SMALL),
+            bg=ModernStyle.BG_SECONDARY,
+            fg=ModernStyle.TEXT_PRIMARY,
+            relief=tk.FLAT,
+            borderwidth=0,
+            state=tk.DISABLED
+        )
         self.log_text.pack(fill=tk.BOTH, expand=True)
 
-        # Clear log button / 清除日志按钮
-        ttk.Button(log_frame, text="Clear Log / 清除日志", command=self.clear_log).pack(anchor=tk.E, pady=5)
+    def _create_footer(self, parent):
+        """Create footer with action buttons"""
+        footer = ttk.Frame(parent, style="Card.TFrame")
+        footer.pack(fill=tk.X, pady=(15, 0))
 
-        # Bottom button frame / 底部按钮框架
-        bottom_frame = ttk.Frame(self.root)
-        bottom_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
+        ttk.Button(footer, text="📂 Open Output Folder", style="Small.TButton",
+                  command=self.open_output_folder).pack(side=tk.LEFT)
+        ttk.Button(footer, text="🗑 Clear Log", style="Small.TButton",
+                  command=self.clear_log).pack(side=tk.RIGHT)
 
-        ttk.Button(bottom_frame, text="Open Output Folder / 打开输出目录", command=self.open_output_folder).pack(side=tk.LEFT, padx=5)
+    def _on_url_focus_in(self, event):
+        """Handle URL text area focus in"""
+        if self.url_text.get("1.0", tk.END).strip().startswith("Paste tweet"):
+            self.url_text.delete("1.0", tk.END)
+            self.url_text.configure(foreground=ModernStyle.TEXT_PRIMARY)
 
-        # Status bar / 状态栏
-        self.status_var = tk.StringVar(value="Ready / 就绪")
-        status_bar = ttk.Label(self.root, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W)
-        status_bar.pack(fill=tk.X, side=tk.BOTTOM)
+    def _on_url_focus_out(self, event):
+        """Handle URL text area focus out"""
+        if not self.url_text.get("1.0", tk.END).strip():
+            self.url_text.insert(tk.END, "Paste tweet URLs here, one per line...\n在此粘贴推文链接，每行一个...")
+            self.url_text.configure(foreground=ModernStyle.TEXT_SECONDARY)
 
-    def browse_directory(self, var):
-        """Browse for directory / 浏览选择目录"""
+    def _browse_directory(self, var):
+        """Browse for directory"""
         directory = filedialog.askdirectory(initialdir=var.get())
         if directory:
             var.set(directory)
 
     def load_urls_from_file(self):
-        """Load URLs from a file / 从文件加载 URL"""
+        """Load URLs from a file"""
         filepath = filedialog.askopenfilename(
-            title="Select URL file / 选择 URL 文件",
+            title="Select URL file",
             filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
         )
         if filepath:
             try:
                 urls = read_urls_from_file(filepath)
-                self.url_text.delete(1.0, tk.END)
+                self.url_text.configure(foreground=ModernStyle.TEXT_PRIMARY)
+                self.url_text.delete("1.0", tk.END)
                 self.url_text.insert(tk.END, "\n".join(urls))
-                self.url_file_label.config(text=f"Loaded {len(urls)} URLs / 已加载 {len(urls)} 个链接")
+                self.url_file_label.config(text=f"Loaded {len(urls)} URLs")
             except Exception as e:
-                messagebox.showerror("Error / 错误", f"Failed to load file / 加载文件失败:\n{e}")
+                messagebox.showerror("Error", f"Failed to load file:\n{e}")
 
     def clear_log(self):
-        """Clear the log area / 清除日志区域"""
+        """Clear the log area"""
         self.log_text.config(state=tk.NORMAL)
-        self.log_text.delete(1.0, tk.END)
+        self.log_text.delete("1.0", tk.END)
         self.log_text.config(state=tk.DISABLED)
 
     def open_output_folder(self):
-        """Open the output folder in file explorer / 在文件管理器中打开输出目录"""
+        """Open the output folder"""
         current_tab = self.notebook.index(self.notebook.select())
-
-        if current_tab == 0:  # Video tab
-            output_dir = self.video_output_var.get()
-        else:  # Bookmark tab
-            output_dir = self.bookmark_output_var.get()
+        output_dir = self.video_output_var.get() if current_tab == 0 else self.bookmark_output_var.get()
 
         if not output_dir:
             output_dir = self.default_output_dir
 
-        # Create directory if it doesn't exist / 如果目录不存在则创建
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-        # Open in file explorer / 在文件管理器中打开
         if sys.platform == 'win32':
             os.startfile(output_dir)
         elif sys.platform == 'darwin':
@@ -309,12 +432,8 @@ class TwitterDownloaderGUI:
         else:
             os.system(f'xdg-open "{output_dir}"')
 
-    def log(self, message):
-        """Add message to log queue / 添加消息到日志队列"""
-        self.log_queue.put(message)
-
-    def update_log_display(self):
-        """Update log display from queue / 从队列更新日志显示"""
+    def _update_log_display(self):
+        """Update log display from queue"""
         try:
             while True:
                 message = self.log_queue.get_nowait()
@@ -325,127 +444,101 @@ class TwitterDownloaderGUI:
         except queue.Empty:
             pass
 
-        # Schedule next update / 安排下一次更新
-        self.root.after(100, self.update_log_display)
+        self.root.after(100, self._update_log_display)
 
-    def set_downloading_state(self, is_downloading):
-        """Update UI state based on download status / 根据下载状态更新 UI"""
+    def _set_downloading_state(self, is_downloading):
+        """Update UI state based on download status"""
         self.is_downloading = is_downloading
 
-        # Update video tab buttons / 更新视频标签页按钮
         if is_downloading:
             self.video_start_btn.config(state=tk.DISABLED)
             self.video_stop_btn.config(state=tk.NORMAL)
+            self.bookmark_start_btn.config(state=tk.DISABLED)
+            self.bookmark_stop_btn.config(state=tk.NORMAL)
+            self.status_var.set("Downloading...")
         else:
             self.video_start_btn.config(state=tk.NORMAL)
             self.video_stop_btn.config(state=tk.DISABLED)
-
-        # Update bookmark tab buttons / 更新书签标签页按钮
-        if is_downloading:
-            self.bookmark_start_btn.config(state=tk.DISABLED)
-            self.bookmark_stop_btn.config(state=tk.NORMAL)
-        else:
             self.bookmark_start_btn.config(state=tk.NORMAL)
             self.bookmark_stop_btn.config(state=tk.DISABLED)
+            self.status_var.set("Ready")
 
     def stop_download(self):
-        """Stop the current download / 停止当前下载"""
+        """Stop the current download"""
         if self.download_thread and self.download_thread.is_alive():
-            self.log("\nStopping download... / 正在停止下载...\n")
-            # Note: This is a soft stop. The thread will finish its current task.
-            # 注意：这是软停止。线程会完成当前任务后停止。
+            self.log_queue.put("\n⏹ Stopping download...\n")
             self.is_downloading = False
-            self.set_downloading_state(False)
-            self.status_var.set("Stopped / 已停止")
+            self._set_downloading_state(False)
+            self.status_var.set("Stopped")
 
     def start_video_download(self):
-        """Start video download / 开始视频下载"""
-        # Get URLs / 获取 URL
-        url_text = self.url_text.get(1.0, tk.END).strip()
+        """Start video download"""
+        url_text = self.url_text.get("1.0", tk.END).strip()
+
+        # Check for placeholder text
+        if url_text.startswith("Paste tweet"):
+            url_text = ""
+
         urls = [line.strip() for line in url_text.split('\n') if line.strip()]
 
         if not urls:
-            messagebox.showwarning("Warning / 警告", "Please enter at least one URL / 请输入至少一个链接")
+            messagebox.showwarning("Warning", "Please enter at least one URL")
             return
 
-        # Validate settings / 验证设置
         try:
             delay = float(self.video_delay_var.get())
         except ValueError:
-            messagebox.showwarning("Warning / 警告", "Invalid delay value / 无效的延迟值")
+            messagebox.showwarning("Warning", "Invalid delay value")
             return
 
-        output_dir = self.video_output_var.get()
-        if not output_dir:
-            output_dir = self.default_output_dir
+        output_dir = self.video_output_var.get() or self.default_output_dir
 
-        # Update UI / 更新界面
-        self.set_downloading_state(True)
-        self.status_var.set("Downloading... / 下载中...")
+        self._set_downloading_state(True)
+        sys.stdout = TextRedirector(self.log_queue)
 
-        # Redirect stdout / 重定向标准输出
-        self.original_stdout = sys.stdout
-        sys.stdout = TextRedirector(self.log_text, self.log_queue)
-
-        # Start download thread / 启动下载线程
         def download_thread():
             try:
-                downloader = TwitterVideoDownloader(
-                    output_dir=output_dir,
-                    delay=delay
-                )
+                downloader = TwitterVideoDownloader(output_dir=output_dir, delay=delay)
                 downloader.download_from_urls(urls)
             except Exception as e:
-                self.log(f"\nError / 错误: {e}\n")
+                self.log_queue.put(f"\n❌ Error: {e}\n")
             finally:
                 sys.stdout = self.original_stdout
-                self.root.after(0, lambda: self.set_downloading_state(False))
-                self.root.after(0, lambda: self.status_var.set("Ready / 就绪"))
+                self.root.after(0, lambda: self._set_downloading_state(False))
 
         self.download_thread = threading.Thread(target=download_thread, daemon=True)
         self.download_thread.start()
 
     def start_bookmark_download(self):
-        """Start bookmark download / 开始书签下载"""
-
-        # Validate settings / 验证设置
-        output_dir = self.bookmark_output_var.get()
-        if not output_dir:
-            output_dir = self.default_output_dir
+        """Start bookmark download"""
+        output_dir = self.bookmark_output_var.get() or self.default_output_dir
 
         try:
             max_tweets = int(self.max_tweets_var.get()) if self.max_tweets_var.get() else 999999
         except ValueError:
-            messagebox.showwarning("Warning / 警告", "Invalid max tweets value / 无效的最大推文数值")
+            messagebox.showwarning("Warning", "Invalid max tweets value")
             return
 
         try:
             max_scrolls = int(self.max_scrolls_var.get()) if self.max_scrolls_var.get() else 999999
         except ValueError:
-            messagebox.showwarning("Warning / 警告", "Invalid max scrolls value / 无效的最大滚动次数值")
+            messagebox.showwarning("Warning", "Invalid max scrolls value")
             return
 
         try:
             max_size = float(self.max_size_var.get())
         except ValueError:
-            messagebox.showwarning("Warning / 警告", "Invalid max size value / 无效的最大视频大小值")
+            messagebox.showwarning("Warning", "Invalid max size value")
             return
 
         browser_type = self.browser_var.get()
         headless = self.headless_var.get()
 
-        # Update UI / 更新界面
-        self.set_downloading_state(True)
-        self.status_var.set("Downloading from bookmarks... / 从书签下载中...")
+        self._set_downloading_state(True)
+        sys.stdout = TextRedirector(self.log_queue)
 
-        # Redirect stdout / 重定向标准输出
-        self.original_stdout = sys.stdout
-        sys.stdout = TextRedirector(self.log_text, self.log_queue)
-
-        # Start download thread / 启动下载线程
         def download_thread():
             try:
-                # Create new event loop for this thread / 为此线程创建新的事件循环
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
 
@@ -456,41 +549,34 @@ class TwitterDownloaderGUI:
                     browser_type=browser_type
                 )
 
-                loop.run_until_complete(downloader.run(
-                    max_tweets=max_tweets,
-                    max_scrolls=max_scrolls
-                ))
+                loop.run_until_complete(downloader.run(max_tweets=max_tweets, max_scrolls=max_scrolls))
             except Exception as e:
-                self.log(f"\nError / 错误: {e}\n")
+                self.log_queue.put(f"\n❌ Error: {e}\n")
             finally:
                 if 'loop' in locals():
                     loop.close()
                 sys.stdout = self.original_stdout
-                self.root.after(0, lambda: self.set_downloading_state(False))
-                self.root.after(0, lambda: self.status_var.set("Ready / 就绪"))
+                self.root.after(0, lambda: self._set_downloading_state(False))
 
         self.download_thread = threading.Thread(target=download_thread, daemon=True)
         self.download_thread.start()
 
 
 def main():
-    """Main entry point / 主入口"""
+    """Main entry point"""
     root = tk.Tk()
 
-    # Set icon if available / 如果可用则设置图标
+    # Try to set window icon
     try:
         root.iconbitmap(default='')
     except:
         pass
 
-    # Apply a theme if available / 如果可用则应用主题
+    # Apply theme
     try:
         style = ttk.Style()
-        available_themes = style.theme_names()
-        if 'clam' in available_themes:
+        if 'clam' in style.theme_names():
             style.theme_use('clam')
-        elif 'vista' in available_themes:
-            style.theme_use('vista')
     except:
         pass
 
