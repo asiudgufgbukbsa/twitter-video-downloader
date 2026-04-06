@@ -350,8 +350,8 @@ class TwitterDownloaderGUI:
         self.canvas.bind("<Configure>", self._on_canvas_configure)
         self.scrollable_frame.bind("<Configure>", self._on_frame_configure)
 
-        # Mouse wheel scrolling - bind to entire window
-        self.root.bind("<MouseWheel>", self._on_mousewheel)
+        # Mouse wheel scrolling - bind to canvas only (not root)
+        # This allows log area to have its own scrolling
         self.canvas.bind("<MouseWheel>", self._on_mousewheel)
 
         # Content container with padding
@@ -885,18 +885,18 @@ class TwitterDownloaderGUI:
 
     def _get_log_tag(self, text):
         """Determine the appropriate tag for log text"""
-        text_lower = text.lower()
-        if "success" in text_lower or "✓" in text or "saved" in text_lower or "完成" in text:
+        # Check for emoji and Chinese keywords
+        if "✅" in text or "成功" in text or "完成" in text or "下载完成" in text:
             return "success"
-        elif "error" in text_lower or "✗" in text or "failed" in text_lower or "错误" in text:
+        elif "❌" in text or "失败" in text or "错误" in text or "不对" in text:
             return "error"
-        elif "warning" in text_lower or "skipped" in text_lower or "跳过" in text:
+        elif "⏭️" in text or "跳过" in text or "已下载" in text:
             return "warning"
-        elif "progress" in text_lower or "%" in text or "进度" in text:
+        elif "📊" in text or "进度" in text or "%" in text:
             return "progress"
-        elif "starting" in text_lower or "downloading" in text_lower or "processing" in text_lower or "开始" in text or "下载" in text:
+        elif "🚀" in text or "📌" in text or "📥" in text or "正在" in text or "开始" in text:
             return "info"
-        elif "=" in text and len(text.strip()) > 10:
+        elif "─" in text and len(text.strip()) > 10:
             return "highlight"
         return None
 

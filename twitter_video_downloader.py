@@ -141,7 +141,7 @@ class TwitterVideoDownloader:
             True if successful, False otherwise
         """
         try:
-            print(f"  Downloading... / 正在下载...")
+            print(f"   📥 正在下载...")
             response = self.session.get(url, stream=True, timeout=self.download_timeout)
             response.raise_for_status()
 
@@ -155,13 +155,13 @@ class TwitterVideoDownloader:
                         downloaded += len(chunk)
                         if total_size:
                             progress = (downloaded / total_size) * 100
-                            print(f"\r  Progress / 下载进度: {progress:.1f}%", end='', flush=True)
+                            print(f"\r   📊 进度: {progress:.0f}%", end='', flush=True)
 
-            print(f"\n  ✓ Saved to / 已保存到: {output_path}")
+            print(f"\n   ✅ 下载完成！保存到: {output_path}")
             return True
 
         except Exception as e:
-            print(f"\n  ✗ Download failed / 下载失败: {e}")
+            print(f"\n   ❌ 下载失败: {e}")
             return False
 
     def download_from_url(self, url: str) -> Optional[str]:
@@ -176,24 +176,23 @@ class TwitterVideoDownloader:
         """
         tweet_id = self.extract_tweet_id(url)
         if not tweet_id:
-            print(f"✗ Cannot extract tweet ID from URL / 无法从 URL 提取 tweet ID: {url}")
+            print(f"\n❌ 链接格式不对，检查一下: {url}")
             return None
 
-        print(f"\nProcessing tweet / 处理推文: {tweet_id}")
+        print(f"\n📌 正在处理第 {tweet_id} 号推文...")
 
         # Get video info
         tweet_data = self.get_video_info_via_fxtwitter(tweet_id)
 
         if not tweet_data:
-            print("  ✗ Cannot get tweet info, may be deleted or private")
-            print("  ✗ 无法获取推文信息，可能推文已被删除或设为私密")
+            print("   ❌ 获取不到推文信息，可能被删除了或设为私密了")
             return None
 
         # Extract video URL
         videos = self.extract_video_url(tweet_data)
 
         if not videos:
-            print("  ✗ No video in this tweet / 该推文没有包含视频")
+            print("   ⏭️ 这条推文没有视频，跳过")
             return None
 
         video_url = videos[0][0]
@@ -202,7 +201,7 @@ class TwitterVideoDownloader:
         output_path = self.output_dir / f"{tweet_id}.mp4"
 
         if output_path.exists():
-            print(f"  File exists, skipping / 文件已存在，跳过")
+            print(f"   ✅ 已经下载过了，跳过")
             return str(output_path)
 
         # Download video
@@ -224,12 +223,12 @@ class TwitterVideoDownloader:
         results = []
         total = len(urls)
 
-        print(f"\n{'='*60}")
-        print(f"Starting batch download / 开始批量下载: {total} tweets / 个推文")
-        print(f"{'='*60}")
+        print(f"\n{'─'*50}")
+        print(f"🚀 开始下载！共 {total} 个视频")
+        print(f"{'─'*50}")
 
         for i, url in enumerate(urls, 1):
-            print(f"\n[{i}/{total}]", end=' ')
+            print(f"\n【{i}/{total}】", end=' ')
             url = url.strip()
             if not url:
                 continue
@@ -246,17 +245,17 @@ class TwitterVideoDownloader:
                 time.sleep(self.delay)
 
         # Print summary
-        print(f"\n{'='*60}")
-        print("Download complete! / 下载完成！汇总:")
+        print(f"\n{'─'*50}")
         success_count = sum(1 for r in results if r['success'])
-        print(f"  Success / 成功: {success_count}/{total}")
+        print(f"🎉 下载完成！成功: {success_count} 个，失败: {total - success_count} 个")
 
         failed = [r for r in results if not r['success']]
         if failed:
-            print(f"  Failed / 失败: {len(failed)}")
+            print(f"\n❌ 失败的链接:")
             for r in failed:
-                print(f"    - {r['url']}")
+                print(f"   • {r['url']}")
 
+        print(f"{'─'*50}\n")
         return results
 
 
