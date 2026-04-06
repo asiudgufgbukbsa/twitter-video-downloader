@@ -213,11 +213,11 @@ class TwitterBookmarkDownloader:
         output_path = self.output_dir / f"{tweet_id}.mp4"
 
         if output_path.exists():
-            print(f"    File exists, skipping / 文件已存在，跳过")
+            print(f"   ✅ 已经下载过了，跳过")
             return True
 
         try:
-            print(f"    Fetching video info... / 正在获取视频信息...")
+            print(f"   📥 正在获取视频信息...")
             # Send HEAD request first to get file size
             head_response = requests.head(video_url, timeout=30, allow_redirects=True)
             total_size = int(head_response.headers.get('content-length', 0))
@@ -225,11 +225,11 @@ class TwitterBookmarkDownloader:
 
             # Check file size
             if total_size > 0 and total_size_mb > self.max_size_mb:
-                print(f"    Skipped: File too large / 跳过: 文件过大 ({total_size_mb:.1f}MB > {self.max_size_mb}MB)")
+                print(f"   ⏭️ 文件太大 ({total_size_mb:.1f}MB > {self.max_size_mb}MB)，跳过")
                 return False
 
             size_info = f" ({total_size_mb:.1f}MB)" if total_size > 0 else ""
-            print(f"    Downloading{size_info}... / 正在下载{size_info}...")
+            print(f"   📥 正在下载{size_info}...")
             response = requests.get(video_url, stream=True, timeout=120)
             response.raise_for_status()
 
@@ -245,14 +245,14 @@ class TwitterBookmarkDownloader:
                         downloaded += len(chunk)
                         if total_size:
                             progress = (downloaded / total_size) * 100
-                            print(f"\r    Progress / 下载进度: {progress:.1f}%", end='', flush=True)
+                            print(f"\r   📊 进度: {progress:.0f}%", end='', flush=True)
 
-            print(f"\n    Saved / 已保存: {output_path.name}")
+            print(f"\n   ✅ 下载完成！保存为: {output_path.name}")
             self.downloaded_ids.add(tweet_id)
             return True
 
         except Exception as e:
-            print(f"    Download failed / 下载失败: {e}")
+            print(f"\n   ❌ 下载失败: {e}")
             return False
 
     async def scroll_and_collect_bookmarks(
@@ -267,7 +267,9 @@ class TwitterBookmarkDownloader:
         scroll_count = 0
         no_new_count = 0
 
-        print(f"\nCollecting bookmark tweets / 收集书签推文 (max / 最多 {max_tweets}, max scrolls / 最大滚动 {max_scrolls})...")
+        print(f"\n📖 正在扫描你的书签...")
+        print(f"   （最多 {max_tweets} 条，最多滚动 {max_scrolls} 次）")
+        print()
 
         while scroll_count < max_scrolls and len(tweet_urls) < max_tweets:
             await asyncio.sleep(2)
@@ -290,12 +292,12 @@ class TwitterBookmarkDownloader:
                     continue
 
             current_count = len(tweet_urls)
-            print(f"\r  Collected / 已收集: {current_count} tweets / 个推文 (scroll / 滚动 {scroll_count + 1})", end='', flush=True)
+            print(f"   📋 已找到 {current_count} 条推文（第 {scroll_count + 1} 次滚动）")
 
             if current_count == prev_count:
                 no_new_count += 1
                 if no_new_count >= 3:
-                    print(f"\n  No new tweets found, stopping / 没有发现新推文，停止滚动")
+                    print(f"\n   ✓ 没有更多了，停止扫描")
                     break
             else:
                 no_new_count = 0
@@ -304,7 +306,7 @@ class TwitterBookmarkDownloader:
             scroll_count += 1
             await asyncio.sleep(1.5)
 
-        print(f"\nCollection complete / 收集完成: {len(tweet_urls)} tweets / 个推文链接")
+        print(f"\n✓ 扫描完成！共找到 {len(tweet_urls)} 条书签推文")
         return tweet_urls
 
     async def run(
@@ -313,15 +315,15 @@ class TwitterBookmarkDownloader:
         max_scrolls: int = DEFAULT_MAX_SCROLLS
     ):
         """Main run function / 主运行函数"""
-        print("=" * 60)
-        print("Twitter/X Bookmark Video Downloader / 书签视频下载器")
-        print("=" * 60)
-        print(f"\nOutput directory / 输出目录: {self.output_dir.absolute()}")
-        print(f"Browser mode / 浏览器模式: {'headless / 无头' if self.headless else 'visible / 可见'}")
-        print(f"Browser type / 浏览器类型: {self.browser_type}")
+        print(f"\n{'─'*50}")
+        print("🔖 书签视频下载器")
+        print(f"{'─'*50}")
+        print(f"📁 保存位置: {self.output_dir.absolute()}")
+        print(f"🌐 浏览器: {self.browser_type}")
+        print()
 
         async with async_playwright() as p:
-            print("\nStarting browser... / 正在启动浏览器...")
+            print("🚀 正在启动浏览器...")
 
             executable_path = None
             browser_found = False
@@ -332,23 +334,20 @@ class TwitterBookmarkDownloader:
                     chrome_path = get_chrome_executable_path()
                     if chrome_path:
                         executable_path = chrome_path
-                        print(f"Found Chrome / 找到 Chrome: {chrome_path}")
+                        print(f"   找到 Chrome")
                         browser_found = True
 
                 if not browser_found and self.browser_type in ['edge', 'auto']:
                     edge_path = get_edge_executable_path()
                     if edge_path:
                         executable_path = edge_path
-                        print(f"Found Edge / 找到 Edge: {edge_path}")
+                        print(f"   找到 Edge")
                         browser_found = True
 
             # Launch browser
-            if executable_path:
-                print(f"\nUsing installed browser / 使用已安装的浏览器...")
-                print(f"Note / 注意: Please ensure Chrome/Edge is closed to avoid conflicts / 请确保 Chrome/Edge 浏览器已关闭，否则会冲突")
-            else:
-                print(f"\nUsing built-in Chromium / 使用内置 Chromium...")
-                print(f"You may need to login to Twitter manually / 你可能需要在浏览器中手动登录 Twitter")
+            if not executable_path:
+                print("   使用内置 Chromium")
+                print("   如果需要登录，请在浏览器窗口中登录")
 
             try:
                 launch_options = {
@@ -363,8 +362,8 @@ class TwitterBookmarkDownloader:
 
                 context = await p.chromium.launch_persistent_context(**launch_options)
             except Exception as e:
-                print(f"Launch failed / 启动失败: {e}")
-                print(f"Trying default Chromium... / 尝试使用默认 Chromium...")
+                print(f"❌ 启动失败: {e}")
+                print("   尝试使用默认 Chromium...")
                 context = await p.chromium.launch_persistent_context(
                     user_data_dir=self.browser_profile,
                     headless=self.headless,
@@ -375,18 +374,18 @@ class TwitterBookmarkDownloader:
             page = context.pages[0] if context.pages else await context.new_page()
 
             # Visit bookmark page
-            print("\nVisiting bookmark page... / 正在访问书签页面...")
-            print("If timeout, please ensure VPN is enabled / 如果访问超时，请确保 VPN 已开启")
+            print("\n📖 正在打开书签页面...")
+            print("   （如果超时，请检查网络/VPN）")
 
             try:
                 await page.goto('https://x.com/i/bookmarks', wait_until='domcontentloaded', timeout=120000)
             except Exception as e:
-                print(f"\nAccess failed / 访问失败: {e}")
-                print("\nPossible causes / 可能的原因:")
-                print("  1. VPN not enabled or not configured / VPN 未开启或未正确配置")
-                print("  2. Network connection issues / 网络连接问题")
-                print("  3. Twitter access restricted / Twitter 访问受限")
-                print("\nPlease check network and retry / 请检查网络后重试")
+                print(f"\n❌ 访问失败: {e}")
+                print("\n可能的原因:")
+                print("   1. 没开 VPN")
+                print("   2. 网络问题")
+                print("   3. Twitter 访问受限")
+                print("\n请检查网络后重试")
                 await context.close()
                 return
 
@@ -397,11 +396,11 @@ class TwitterBookmarkDownloader:
             page_content = await page.content()
 
             if 'login' in current_url or 'Log in' in page_content or await page.locator('input[name="text"]').count() > 0:
-                print("\n" + "=" * 50)
-                print("Login required! / 需要登录 Twitter!")
-                print("Please login in the browser window / 请在浏览器窗口中手动登录")
-                print("Press Enter after login is complete... / 登录完成后，按回车继续...")
-                print("=" * 50)
+                print(f"\n{'─'*50}")
+                print("⚠️ 需要登录 Twitter！")
+                print("   请在弹出的浏览器窗口中登录")
+                print("   登录完成后，回到这里按回车继续...")
+                print(f"{'─'*50}")
                 input()
 
                 await page.goto('https://x.com/i/bookmarks', wait_until='domcontentloaded', timeout=120000)
@@ -415,44 +414,48 @@ class TwitterBookmarkDownloader:
             )
 
             if not tweet_urls:
-                print("\nNo bookmark tweets found / 没有找到任何书签推文")
+                print("\n❌ 没有找到任何书签推文")
                 await context.close()
                 return
 
             # Process each tweet
-            print(f"\nProcessing {len(tweet_urls)} tweets... / 开始处理 {len(tweet_urls)} 个推文...")
+            print(f"\n{'─'*50}")
+            print(f"🔍 开始检查 {len(tweet_urls)} 条推文...")
+            print(f"{'─'*50}")
             success_count = 0
             video_count = 0
 
             for i, url in enumerate(tweet_urls, 1):
                 tweet_id = self.extract_tweet_id(url)
-                print(f"\n[{i}/{len(tweet_urls)}] Processing / 处理推文 {tweet_id}")
+                print(f"\n【{i}/{len(tweet_urls)}】检查推文 {tweet_id}")
 
                 if tweet_id in self.downloaded_ids:
-                    print(f"  Already downloaded, skipping / 已下载过，跳过")
+                    print("   ⏭️ 之前下载过，跳过")
                     continue
 
                 video_url = await self.get_video_url_via_api(tweet_id)
 
                 if video_url:
                     video_count += 1
-                    print(f"  Found video / 找到视频")
+                    print("   🎬 找到视频")
                     if await self.download_video(video_url, tweet_id):
                         success_count += 1
                         self._save_record()
                 else:
-                    print(f"  No video / 没有视频")
+                    print("   📷 没有视频")
 
                 await asyncio.sleep(self.download_delay)
 
             # Summary
-            print("\n" + "=" * 60)
-            print("Download complete! / 下载完成!")
-            print(f"  Total tweets / 总推文数: {len(tweet_urls)}")
-            print(f"  With video / 包含视频: {video_count}")
-            print(f"  Successfully downloaded / 成功下载: {success_count}")
-            print(f"  Output directory / 输出目录: {self.output_dir.absolute()}")
-            print("=" * 60)
+            print(f"\n{'─'*50}")
+            print("🎉 下载完成！")
+            print(f"{'─'*50}")
+            print(f"   📊 统计信息:")
+            print(f"      扫描推文: {len(tweet_urls)} 条")
+            print(f"      包含视频: {video_count} 个")
+            print(f"      成功下载: {success_count} 个")
+            print(f"   📁 保存位置: {self.output_dir.absolute()}")
+            print(f"{'─'*50}\n")
 
             await context.close()
 
