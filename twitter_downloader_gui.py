@@ -46,10 +46,8 @@ class Language:
         "start": "▶ Start Download",
         "stop": "⏹ Stop",
         "how_to_use": "💡 Tips",
-        "step1": "① Make sure you're logged into Twitter/X in Chrome or Edge",
-        "step2": "② Close ALL browser windows before starting",
-        "step3": "③ Click Start - a browser window will open automatically",
-        "step4": "④ If not logged in, log in the browser then come back here",
+        "step1": "① Click Start, a browser will open automatically",
+        "step2": "② If not logged in, log in the browser window",
         "browser": "🌐 Browser:",
         "auto": "Auto",
         "max_tweets": "📊 Max tweets:",
@@ -85,10 +83,8 @@ class Language:
         "start": "▶ 开始下载",
         "stop": "⏹ 停止",
         "how_to_use": "💡 使用提示",
-        "step1": "① 确保你已在 Chrome 或 Edge 中登录 Twitter/X",
-        "step2": "② 开始前关闭所有浏览器窗口",
-        "step3": "③ 点击开始 - 会自动打开浏览器窗口",
-        "step4": "④ 如未登录，在浏览器中登录后返回此窗口",
+        "step1": "① 点击开始，会自动打开浏览器窗口",
+        "step2": "② 如未登录，在浏览器窗口中登录即可",
         "browser": "🌐 浏览器:",
         "auto": "自动",
         "max_tweets": "📊 最大推文数:",
@@ -219,7 +215,7 @@ class TwitterDownloaderGUI:
         self.root = root
         self.root.title("Twitter Video Downloader")
         self.root.geometry("720x750")
-        self.root.minsize(500, 500)  # Allow smaller minimum size
+        self.root.minsize(500, 500)
         self.root.configure(bg=Colors.BG_MAIN)
 
         # Language setting
@@ -268,25 +264,15 @@ class TwitterDownloaderGUI:
         if tab_name == "video":
             self.video_tab_btn.set_active(True)
             self.bookmark_tab_btn.set_active(False)
-            self.video_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
+            self.video_frame.lift()
+            self.video_frame.pack(fill=tk.BOTH, expand=True)
             self.bookmark_frame.pack_forget()
         else:
             self.video_tab_btn.set_active(False)
             self.bookmark_tab_btn.set_active(True)
+            self.bookmark_frame.lift()
+            self.bookmark_frame.pack(fill=tk.BOTH, expand=True)
             self.video_frame.pack_forget()
-            self.bookmark_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
-
-        # Update scroll region
-        self.root.after(100, self._update_scroll_region)
-
-    def _update_scroll_region(self):
-        """Update the scroll region to fit content"""
-        self.canvas.update_idletasks()
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-
-    def _on_canvas_configure(self, event):
-        """Handle canvas resize"""
-        self.canvas.itemconfig(self.scroll_frame_id, width=event.width)
 
     def _on_mousewheel(self, event):
         """Handle mouse wheel scrolling"""
@@ -315,7 +301,7 @@ class TwitterDownloaderGUI:
 
         # Update bookmark tab
         self.info_label.config(text=self._t("how_to_use"))
-        for i, key in enumerate(["step1", "step2", "step3", "step4"]):
+        for i, key in enumerate(["step1", "step2"]):
             self.step_labels[i].config(text=self._t(key))
         self.settings_label2.config(text=self._t("settings"))
         self.save_to_label2.config(text=self._t("save_to"))
@@ -341,18 +327,17 @@ class TwitterDownloaderGUI:
 
     def _setup_ui(self):
         """Setup the main user interface with scroll support"""
-        # Main container with canvas for scrolling
+        # Main container
         self.main_frame = tk.Frame(self.root, bg=Colors.BG_MAIN)
         self.main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Create canvas and scrollbar
+        # Create canvas and scrollbar for scrolling
         self.canvas = tk.Canvas(self.main_frame, bg=Colors.BG_MAIN, highlightthickness=0)
         self.scrollbar = tk.Scrollbar(self.main_frame, orient="vertical", command=self.canvas.yview)
 
         # Scrollable frame
         self.scrollable_frame = tk.Frame(self.canvas, bg=Colors.BG_MAIN)
-
-        self.scroll_frame_id = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", tags="scroll_frame")
 
         # Configure canvas
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
@@ -361,12 +346,13 @@ class TwitterDownloaderGUI:
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        # Bind events
+        # Bind events for scrolling
         self.canvas.bind("<Configure>", self._on_canvas_configure)
-        self.scrollable_frame.bind("<Configure>", lambda e: self._update_scroll_region())
+        self.scrollable_frame.bind("<Configure>", self._on_frame_configure)
 
-        # Mouse wheel scrolling
-        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        # Mouse wheel scrolling - bind to entire window
+        self.root.bind("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind("<MouseWheel>", self._on_mousewheel)
 
         # Content container with padding
         content_frame = tk.Frame(self.scrollable_frame, bg=Colors.BG_MAIN)
@@ -378,7 +364,7 @@ class TwitterDownloaderGUI:
         # Tab buttons
         self._create_tab_buttons(content_frame)
 
-        # Content frames (will be shown/hidden based on tab selection)
+        # Content area for tabs (scrollable)
         self.content_area = tk.Frame(content_frame, bg=Colors.BG_MAIN)
         self.content_area.pack(fill=tk.BOTH, expand=True)
 
@@ -386,13 +372,22 @@ class TwitterDownloaderGUI:
         self._create_bookmark_tab()
 
         # Show video tab by default
-        self.video_frame.pack(in_=self.content_area, fill=tk.BOTH, expand=True, pady=(10, 0))
+        self.video_frame.pack(fill=tk.BOTH, expand=True)
 
         # Log area (always visible at bottom)
         self._create_log_area(content_frame)
 
         # Footer
         self._create_footer(content_frame)
+
+    def _on_canvas_configure(self, event):
+        """Handle canvas resize"""
+        # Update the scroll frame width to match canvas
+        self.canvas.itemconfig("scroll_frame", width=event.width)
+
+    def _on_frame_configure(self, event):
+        """Update scroll region when frame changes"""
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def _create_header(self, parent):
         """Create header section"""
@@ -464,12 +459,12 @@ class TwitterDownloaderGUI:
 
     def _create_video_tab(self):
         """Create video download tab"""
-        self.video_frame = tk.Frame(bg=Colors.BG_CARD)
+        self.video_frame = tk.Frame(self.content_area, bg=Colors.BG_CARD)
 
         # URL Input Section
         url_frame = tk.LabelFrame(self.video_frame, text="", bg=Colors.BG_CARD,
                                   font=("Segoe UI", 11, "bold"), fg=Colors.PRIMARY)
-        url_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10), padx=5)
+        url_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 10), padx=5)
 
         self.url_label = tk.Label(url_frame, text=self._t("tweet_urls"),
                                   font=("Segoe UI", 11, "bold"),
@@ -599,12 +594,12 @@ class TwitterDownloaderGUI:
 
     def _create_bookmark_tab(self):
         """Create bookmark download tab"""
-        self.bookmark_frame = tk.Frame(bg=Colors.BG_CARD)
+        self.bookmark_frame = tk.Frame(self.content_area, bg=Colors.BG_CARD)
 
-        # Info Section
+        # Info Section (simplified)
         info_frame = tk.LabelFrame(self.bookmark_frame, text="", bg=Colors.BG_CARD,
                                    font=("Segoe UI", 11, "bold"), fg=Colors.PRIMARY)
-        info_frame.pack(fill=tk.X, pady=(0, 10), padx=5)
+        info_frame.pack(fill=tk.X, pady=(10, 10), padx=5)
 
         self.info_label = tk.Label(info_frame, text=self._t("how_to_use"),
                                    font=("Segoe UI", 11, "bold"),
@@ -615,7 +610,7 @@ class TwitterDownloaderGUI:
         info_container.pack(fill=tk.X, padx=10, pady=10)
 
         self.step_labels = []
-        for key in ["step1", "step2", "step3", "step4"]:
+        for key in ["step1", "step2"]:
             label = tk.Label(
                 info_container, text=self._t(key),
                 font=("Segoe UI", 10),
@@ -773,7 +768,7 @@ class TwitterDownloaderGUI:
 
         self.log_text = scrolledtext.ScrolledText(
             log_frame,
-            height=10,
+            height=8,
             wrap=tk.WORD,
             font=("Consolas", 10),
             bg=Colors.BG_INPUT,
