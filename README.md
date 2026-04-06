@@ -24,19 +24,19 @@ A set of Python scripts for downloading videos from Twitter/X. Supports both dir
 
 **For Windows Users:**
 
-1. Double-click `install.bat` to install dependencies
-2. Double-click `run_gui.bat` to launch the graphical interface
-3. No command line knowledge required!
+1. Make sure [Python 3.8+](https://www.python.org/downloads/) is installed (check "Add Python to PATH" during installation)
+2. Double-click `start.bat`
+3. The script will auto-install dependencies on first run
+4. No command line knowledge required!
 
 **For macOS/Linux Users:**
 
 ```bash
-# Install dependencies
-chmod +x install.sh
-./install.sh
+# First time: make executable and run
+chmod +x start.sh
+./start.sh
 
-# Launch GUI
-./run_gui.sh
+# The script will auto-install dependencies on first run
 ```
 
 ### Installation 📦
@@ -61,7 +61,7 @@ chmod +x install.sh
 
 #### GUI Version (Recommended for beginners)
 
-Simply double-click `run_gui.bat` (Windows) or run `./run_gui.sh` (macOS/Linux) to launch the graphical interface.
+Simply double-click `start.bat` (Windows) or run `./start.sh` (macOS/Linux) to launch the graphical interface. The script will automatically install dependencies if needed.
 
 **Video Download Tab:**
 - Enter Twitter/X URLs (one per line)
@@ -217,19 +217,19 @@ MIT License - Feel free to use, modify, and distribute.
 
 **Windows 用户：**
 
-1. 双击 `install.bat` 安装依赖
-2. 双击 `run_gui.bat` 启动图形界面
-3. 无需任何命令行知识！
+1. 确保已安装 [Python 3.8+](https://www.python.org/downloads/)（安装时勾选 "Add Python to PATH"）
+2. 双击 `start.bat`
+3. 首次运行会自动安装依赖
+4. 无需任何命令行知识！
 
 **macOS/Linux 用户：**
 
 ```bash
-# 安装依赖
-chmod +x install.sh
-./install.sh
+# 首次运行：添加执行权限并启动
+chmod +x start.sh
+./start.sh
 
-# 启动图形界面
-./run_gui.sh
+# 首次运行会自动安装依赖
 ```
 
 ### 安装 📦
@@ -254,7 +254,7 @@ chmod +x install.sh
 
 #### 图形界面版本（推荐新手使用）
 
-直接双击 `run_gui.bat`（Windows）或运行 `./run_gui.sh`（macOS/Linux）即可启动图形界面。
+直接双击 `start.bat`（Windows）或运行 `./start.sh`（macOS/Linux）即可启动图形界面。首次运行会自动检测并安装所需依赖。
 
 **视频下载标签页：**
 - 输入 Twitter/X 链接（每行一个）
