@@ -16,44 +16,46 @@ echo.
 echo [检查 Python...]
 set "PYTHON_EXE="
 
-:: 方法1: 直接调用 python
-python --version >nul 2>&1
-if not errorlevel 1 (
-    set "PYTHON_EXE=python"
-    goto :found_python
-)
-
-:: 方法2: 尝试 python3
-python3 --version >nul 2>&1
-if not errorlevel 1 (
-    set "PYTHON_EXE=python3"
-    goto :found_python
-)
-
-:: 方法3: 尝试 py 启动器
+:: 方法1: 使用 py 启动器（最可靠）
 py --version >nul 2>&1
 if not errorlevel 1 (
     set "PYTHON_EXE=py"
     goto :found_python
 )
 
-:: 方法4: 尝试 py -3
-py -3 --version >nul 2>&1
+:: 方法2: 直接调用 python
+python --version >nul 2>&1
 if not errorlevel 1 (
-    set "PYTHON_EXE=py -3"
+    set "PYTHON_EXE=python"
     goto :found_python
 )
 
-:: 方法5: 检查常见安装路径
-if exist "%LOCALAPPDATA%\Programs\Python\Python3*\python.exe" (
-    for /d %%i in ("%LOCALAPPDATA%\Programs\Python\Python3*") do (
-        set "PYTHON_EXE=%%i\python.exe"
-        goto :found_python
-    )
+:: 方法3: 尝试 python3
+python3 --version >nul 2>&1
+if not errorlevel 1 (
+    set "PYTHON_EXE=python3"
+    goto :found_python
 )
 
-if exist "C:\Python3*\python.exe" (
-    for /d %%i in ("C:\Python3*") do (
+:: 方法4: 检查 Anaconda 常见路径
+if exist "E:\python_study\python.exe" (
+    set "PYTHON_EXE=E:\python_study\python.exe"
+    goto :found_python
+)
+
+if exist "C:\Anaconda3\python.exe" (
+    set "PYTHON_EXE=C:\Anaconda3\python.exe"
+    goto :found_python
+)
+
+if exist "%USERPROFILE%\anaconda3\python.exe" (
+    set "PYTHON_EXE=%USERPROFILE%\anaconda3\python.exe"
+    goto :found_python
+)
+
+:: 方法5: 检查用户安装路径
+for /d %%i in ("%LOCALAPPDATA%\Programs\Python\Python3*") do (
+    if exist "%%i\python.exe" (
         set "PYTHON_EXE=%%i\python.exe"
         goto :found_python
     )
@@ -70,11 +72,10 @@ echo 下载地址: https://www.python.org/downloads/
 echo.
 echo 安装时请务必勾选以下选项：
 echo   [√] Add Python to PATH
-echo   [√] Add Python to environment variables
 echo.
 echo 如果已安装，请尝试：
-echo   1. 重新安装 Python 并勾选 "Add Python to PATH"
-echo   2. 或将 Python 添加到系统环境变量
+echo   1. 打开命令行输入: py --version
+echo   2. 如果能显示版本，说明 Python 已安装
 echo   3. 重启电脑后再试
 echo.
 pause
@@ -84,7 +85,6 @@ exit /b 1
 :: 显示 Python 版本
 for /f "tokens=2 delims= " %%v in ('%PYTHON_EXE% --version 2^>^&1') do set PYTHON_VERSION=%%v
 echo 找到 Python: %PYTHON_VERSION%
-echo 路径: %PYTHON_EXE%
 echo.
 
 :: 检查是否需要安装依赖
