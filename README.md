@@ -7,17 +7,37 @@
 <a name="english"></a>
 ## English
 
-A set of Python scripts for downloading videos from Twitter/X. Supports both direct URL downloads and bookmark batch downloads.
+A set of Python scripts for downloading videos from Twitter/X. Supports both direct URL downloads and bookmark batch downloads. **Now with a user-friendly GUI!**
 
 ### Features ✨
 
 - **Video Downloader**: Download videos from Twitter/X URLs without login
 - **Bookmark Downloader**: Batch download all videos from your Twitter/X bookmarks
+- **Graphical Interface**: Easy-to-use GUI for non-technical users
 - **Cross-platform**: Works on Windows, macOS, and Linux
 - **Browser Integration**: Uses your existing Chrome/Edge login session
 - **Resume Support**: Remembers downloaded videos to avoid duplicates
 - **Configurable**: Extensive command-line options for customization
 - **Bilingual**: Full English and Chinese output messages
+
+### Quick Start (GUI) 🚀
+
+**For Windows Users:**
+
+1. Double-click `install.bat` to install dependencies
+2. Double-click `run_gui.bat` to launch the graphical interface
+3. No command line knowledge required!
+
+**For macOS/Linux Users:**
+
+```bash
+# Install dependencies
+chmod +x install.sh
+./install.sh
+
+# Launch GUI
+./run_gui.sh
+```
 
 ### Installation 📦
 
@@ -39,7 +59,23 @@ A set of Python scripts for downloading videos from Twitter/X. Supports both dir
 
 ### Usage 🚀
 
-#### Video Downloader (No Login Required)
+#### GUI Version (Recommended for beginners)
+
+Simply double-click `run_gui.bat` (Windows) or run `./run_gui.sh` (macOS/Linux) to launch the graphical interface.
+
+**Video Download Tab:**
+- Enter Twitter/X URLs (one per line)
+- Or load URLs from a file
+- Select output directory
+- Click "Start Download"
+
+**Bookmark Download Tab:**
+- Select your browser (Chrome/Edge/Auto)
+- Configure options (max tweets, max scrolls, etc.)
+- Click "Start Download"
+- Login to Twitter if prompted
+
+#### Command Line Version
 
 Download videos from Twitter/X URLs without needing to log in.
 
@@ -164,17 +200,37 @@ MIT License - Feel free to use, modify, and distribute.
 <a name="中文文档"></a>
 ## 中文文档
 
-一套用于从 Twitter/X 下载视频的 Python 脚本。支持直接 URL 下载和书签批量下载。
+一套用于从 Twitter/X 下载视频的 Python 脚本。支持直接 URL 下载和书签批量下载。**现在支持图形界面！**
 
 ### 功能特点 ✨
 
 - **视频下载器**：无需登录即可从 Twitter/X URL 下载视频
 - **书签下载器**：批量下载你 Twitter/X 书签中的所有视频
+- **图形界面**：为非技术用户提供友好的图形界面
 - **跨平台**：支持 Windows、macOS 和 Linux
 - **浏览器集成**：使用你现有的 Chrome/Edge 登录会话
 - **断点续传**：记住已下载的视频，避免重复下载
 - **可配置**：丰富的命令行选项供自定义
 - **双语支持**：完整的中英文输出信息
+
+### 快速开始（图形界面）🚀
+
+**Windows 用户：**
+
+1. 双击 `install.bat` 安装依赖
+2. 双击 `run_gui.bat` 启动图形界面
+3. 无需任何命令行知识！
+
+**macOS/Linux 用户：**
+
+```bash
+# 安装依赖
+chmod +x install.sh
+./install.sh
+
+# 启动图形界面
+./run_gui.sh
+```
 
 ### 安装 📦
 
@@ -196,7 +252,25 @@ MIT License - Feel free to use, modify, and distribute.
 
 ### 使用方法 🚀
 
-#### 视频下载器（无需登录）
+#### 图形界面版本（推荐新手使用）
+
+直接双击 `run_gui.bat`（Windows）或运行 `./run_gui.sh`（macOS/Linux）即可启动图形界面。
+
+**视频下载标签页：**
+- 输入 Twitter/X 链接（每行一个）
+- 或从文件加载链接列表
+- 选择输出目录
+- 点击"开始下载"
+
+**书签下载标签页：**
+- 选择浏览器类型（Chrome/Edge/自动）
+- 配置选项（最大推文数、最大滚动次数等）
+- 点击"开始下载"
+- 如有需要，在弹出的浏览器中登录 Twitter
+
+#### 命令行版本
+
+##### 视频下载器（无需登录）
 
 无需登录即可从 Twitter/X URL 下载视频。
 
@@ -228,7 +302,7 @@ python twitter_video_downloader.py --delay 1.0 'https://x.com/user/status/123456
 | `--download-timeout` | 下载超时时间（秒） | 120 |
 | `--delay` | 下载间隔（秒） | 0.5 |
 
-#### 书签下载器（需要登录）
+##### 书签下载器（需要登录）
 
 批量下载你 Twitter/X 书签中的视频。
 
