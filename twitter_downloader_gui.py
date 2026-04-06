@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Twitter/X Video Downloader GUI
-A cute, warm beige-themed interface with language support
+A cute, warm beige-themed interface with scroll support
 """
 
 import os
@@ -110,36 +110,24 @@ class Language:
 
 class Colors:
     """Warm beige color scheme - cute and cozy"""
-    # Background colors
-    BG_MAIN = "#FFF8E7"           # Warm cream background
-    BG_CARD = "#FFFEF5"           # Lighter cream for cards
-    BG_INPUT = "#FFFDF0"          # Very light cream for inputs
-    BG_TAB = "#F5EBD8"           # Beige for inactive tabs
-    BG_TAB_ACTIVE = "#FF9A8B"    # Coral pink for active tab
-
-    # Accent colors - warm and cute
-    PRIMARY = "#FF7B7B"           # Coral pink
+    BG_MAIN = "#FFF8E7"
+    BG_CARD = "#FFFEF5"
+    BG_INPUT = "#FFFDF0"
+    BG_TAB = "#F5EBD8"
+    BG_TAB_ACTIVE = "#FF9A8B"
+    PRIMARY = "#FF7B7B"
     PRIMARY_HOVER = "#FF6B6B"
-    SECONDARY = "#FFB347"         # Warm orange
-    SUCCESS = "#7BC47F"           # Soft green
-    WARNING = "#FFD93D"           # Sunny yellow
-    ERROR = "#FF6B8A"             # Soft red
-    INFO = "#74B9FF"              # Soft blue
-    PURPLE = "#B19CD9"            # Soft purple
-
-    # Text colors
-    TEXT_PRIMARY = "#5D4E37"      # Dark brown
-    TEXT_SECONDARY = "#8B7355"    # Medium brown
-    TEXT_LIGHT = "#A89078"        # Light brown
+    SECONDARY = "#FFB347"
+    SUCCESS = "#7BC47F"
+    WARNING = "#FFD93D"
+    ERROR = "#FF6B8A"
+    INFO = "#74B9FF"
+    PURPLE = "#B19CD9"
+    TEXT_PRIMARY = "#5D4E37"
+    TEXT_SECONDARY = "#8B7355"
+    TEXT_LIGHT = "#A89078"
     TEXT_WHITE = "#FFFFFF"
-
-    # Borders and shadows
     BORDER = "#E8DCC8"
-    SHADOW = "#D4C4A8"
-
-    # Special
-    GRADIENT_PINK = "#FFB6C1"
-    GRADIENT_PEACH = "#FFDAB9"
 
 
 class TextRedirector:
@@ -157,7 +145,7 @@ class TextRedirector:
 class TabButton(tk.Canvas):
     """Custom tab button with cute styling"""
     def __init__(self, parent, text, command, **kwargs):
-        super().__init__(parent, width=180, height=45, highlightthickness=0, **kwargs)
+        super().__init__(parent, width=160, height=40, highlightthickness=0, **kwargs)
 
         self.text = text
         self.command = command
@@ -177,21 +165,21 @@ class TabButton(tk.Canvas):
         if self.is_active:
             bg_color = Colors.BG_TAB_ACTIVE
             text_color = Colors.TEXT_WHITE
-            radius = 20
+            font_size = 12
         elif hover:
             bg_color = Colors.SECONDARY
             text_color = Colors.TEXT_WHITE
-            radius = 18
+            font_size = 11
         else:
             bg_color = Colors.BG_TAB
             text_color = Colors.TEXT_PRIMARY
-            radius = 15
+            font_size = 11
 
         # Draw rounded rectangle
-        self._draw_rounded_rect(5, 5, 175, 40, radius, bg_color)
+        self._draw_rounded_rect(5, 5, 155, 35, 12, bg_color)
 
         # Draw text
-        self.create_text(90, 22, text=self.text, font=("Segoe UI", 11, "bold"),
+        self.create_text(80, 20, text=self.text, font=("Segoe UI", font_size, "bold"),
                         fill=text_color)
 
     def _draw_rounded_rect(self, x1, y1, x2, y2, radius, color):
@@ -225,18 +213,18 @@ class TabButton(tk.Canvas):
 
 
 class TwitterDownloaderGUI:
-    """Main GUI Application with cute beige theme"""
+    """Main GUI Application with cute beige theme and scroll support"""
 
     def __init__(self, root):
         self.root = root
         self.root.title("Twitter Video Downloader")
-        self.root.geometry("720x800")
-        self.root.minsize(650, 650)
+        self.root.geometry("720x750")
+        self.root.minsize(500, 500)  # Allow smaller minimum size
         self.root.configure(bg=Colors.BG_MAIN)
 
         # Language setting
         self.lang = "en"
-        self.current_tab = "video"  # Track current tab
+        self.current_tab = "video"
 
         # Center window
         self._center_window()
@@ -249,54 +237,18 @@ class TwitterDownloaderGUI:
         self.original_stdout = sys.stdout
 
         # Setup
-        self._setup_styles()
         self._setup_ui()
         self._update_log_display()
 
     def _center_window(self):
         """Center the window on screen"""
         self.root.update_idletasks()
-        w, h = 720, 800
+        w, h = 720, 750
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
         x = (sw - w) // 2
         y = (sh - h) // 2
         self.root.geometry(f"{w}x{h}+{x}+{y}")
-
-    def _setup_styles(self):
-        """Configure ttk styles"""
-        style = ttk.Style()
-
-        style.configure("Main.TFrame", background=Colors.BG_MAIN)
-        style.configure("Card.TFrame", background=Colors.BG_CARD)
-
-        style.configure("Setting.TLabel",
-                       font=("Segoe UI", 10),
-                       background=Colors.BG_CARD,
-                       foreground=Colors.TEXT_PRIMARY)
-
-        style.configure("Info.TLabel",
-                       font=("Segoe UI", 10),
-                       background=Colors.BG_CARD,
-                       foreground=Colors.TEXT_SECONDARY)
-
-        style.configure("TRadiobutton",
-                       font=("Segoe UI", 10),
-                       background=Colors.BG_CARD,
-                       foreground=Colors.TEXT_PRIMARY)
-
-        style.map("TRadiobutton", background=[("active", Colors.BG_CARD)])
-
-        style.configure("TCheckbutton",
-                       font=("Segoe UI", 10),
-                       background=Colors.BG_CARD,
-                       foreground=Colors.TEXT_PRIMARY)
-
-        style.map("TCheckbutton", background=[("active", Colors.BG_CARD)])
-
-        style.configure("TEntry",
-                       fieldbackground=Colors.BG_INPUT,
-                       foreground=Colors.TEXT_PRIMARY)
 
     def _t(self, key):
         """Get translated string"""
@@ -313,7 +265,6 @@ class TwitterDownloaderGUI:
         """Switch between tabs"""
         self.current_tab = tab_name
 
-        # Update tab buttons
         if tab_name == "video":
             self.video_tab_btn.set_active(True)
             self.bookmark_tab_btn.set_active(False)
@@ -324,6 +275,22 @@ class TwitterDownloaderGUI:
             self.bookmark_tab_btn.set_active(True)
             self.video_frame.pack_forget()
             self.bookmark_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
+
+        # Update scroll region
+        self.root.after(100, self._update_scroll_region)
+
+    def _update_scroll_region(self):
+        """Update the scroll region to fit content"""
+        self.canvas.update_idletasks()
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def _on_canvas_configure(self, event):
+        """Handle canvas resize"""
+        self.canvas.itemconfig(self.scroll_frame_id, width=event.width)
+
+    def _on_mousewheel(self, event):
+        """Handle mouse wheel scrolling"""
+        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _refresh_ui(self):
         """Refresh UI with current language"""
@@ -373,28 +340,59 @@ class TwitterDownloaderGUI:
             self.url_text.insert(tk.END, self._t("url_placeholder"))
 
     def _setup_ui(self):
-        """Setup the main user interface"""
-        main_container = tk.Frame(self.root, bg=Colors.BG_MAIN)
-        main_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        """Setup the main user interface with scroll support"""
+        # Main container with canvas for scrolling
+        self.main_frame = tk.Frame(self.root, bg=Colors.BG_MAIN)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Create canvas and scrollbar
+        self.canvas = tk.Canvas(self.main_frame, bg=Colors.BG_MAIN, highlightthickness=0)
+        self.scrollbar = tk.Scrollbar(self.main_frame, orient="vertical", command=self.canvas.yview)
+
+        # Scrollable frame
+        self.scrollable_frame = tk.Frame(self.canvas, bg=Colors.BG_MAIN)
+
+        self.scroll_frame_id = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+
+        # Configure canvas
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        # Pack scrollbar and canvas
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Bind events
+        self.canvas.bind("<Configure>", self._on_canvas_configure)
+        self.scrollable_frame.bind("<Configure>", lambda e: self._update_scroll_region())
+
+        # Mouse wheel scrolling
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+
+        # Content container with padding
+        content_frame = tk.Frame(self.scrollable_frame, bg=Colors.BG_MAIN)
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
         # Header
-        self._create_header(main_container)
+        self._create_header(content_frame)
 
         # Tab buttons
-        self._create_tab_buttons(main_container)
+        self._create_tab_buttons(content_frame)
 
-        # Content frames
+        # Content frames (will be shown/hidden based on tab selection)
+        self.content_area = tk.Frame(content_frame, bg=Colors.BG_MAIN)
+        self.content_area.pack(fill=tk.BOTH, expand=True)
+
         self._create_video_tab()
         self._create_bookmark_tab()
 
         # Show video tab by default
-        self.video_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
+        self.video_frame.pack(in_=self.content_area, fill=tk.BOTH, expand=True, pady=(10, 0))
 
-        # Log area (larger, always visible)
-        self._create_log_area(main_container)
+        # Log area (always visible at bottom)
+        self._create_log_area(content_frame)
 
         # Footer
-        self._create_footer(main_container)
+        self._create_footer(content_frame)
 
     def _create_header(self, parent):
         """Create header section"""
@@ -414,7 +412,7 @@ class TwitterDownloaderGUI:
         )
         self.title_label.pack(side=tk.LEFT)
 
-        # Language toggle button (cute style)
+        # Language toggle button
         self.lang_btn = tk.Button(
             title_frame,
             text=self._t("lang_switch"),
@@ -466,16 +464,12 @@ class TwitterDownloaderGUI:
 
     def _create_video_tab(self):
         """Create video download tab"""
-        self.video_frame = tk.Frame(self.video_frame if hasattr(self, 'video_frame') else self.root,
-                                    bg=Colors.BG_CARD, padx=15, pady=15)
-
-        # We need to create it properly
         self.video_frame = tk.Frame(bg=Colors.BG_CARD)
 
         # URL Input Section
         url_frame = tk.LabelFrame(self.video_frame, text="", bg=Colors.BG_CARD,
                                   font=("Segoe UI", 11, "bold"), fg=Colors.PRIMARY)
-        url_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        url_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10), padx=5)
 
         self.url_label = tk.Label(url_frame, text=self._t("tweet_urls"),
                                   font=("Segoe UI", 11, "bold"),
@@ -524,7 +518,7 @@ class TwitterDownloaderGUI:
         # Settings Section
         settings_frame = tk.LabelFrame(self.video_frame, text="", bg=Colors.BG_CARD,
                                        font=("Segoe UI", 11, "bold"), fg=Colors.PRIMARY)
-        settings_frame.pack(fill=tk.X, pady=(0, 10))
+        settings_frame.pack(fill=tk.X, pady=(0, 10), padx=5)
 
         self.settings_label1 = tk.Label(settings_frame, text=self._t("settings"),
                                         font=("Segoe UI", 11, "bold"),
@@ -539,7 +533,7 @@ class TwitterDownloaderGUI:
                                        bg=Colors.BG_CARD, fg=Colors.TEXT_PRIMARY)
         self.save_to_label1.pack(side=tk.LEFT)
         self.video_output_var = tk.StringVar(value=self.default_output_dir)
-        entry = tk.Entry(dir_row, textvariable=self.video_output_var, width=35,
+        entry = tk.Entry(dir_row, textvariable=self.video_output_var, width=30,
                         font=("Segoe UI", 10), bg=Colors.BG_INPUT, fg=Colors.TEXT_PRIMARY,
                         insertbackground=Colors.TEXT_PRIMARY, relief=tk.FLAT)
         entry.pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
@@ -570,7 +564,7 @@ class TwitterDownloaderGUI:
 
         # Action buttons
         btn_frame = tk.Frame(self.video_frame, bg=Colors.BG_CARD)
-        btn_frame.pack(fill=tk.X)
+        btn_frame.pack(fill=tk.X, padx=5, pady=(0, 10))
 
         self.video_start_btn = tk.Button(
             btn_frame, text=self._t("start"),
@@ -585,7 +579,7 @@ class TwitterDownloaderGUI:
             cursor="hand2",
             command=self.start_video_download
         )
-        self.video_start_btn.pack(side=tk.LEFT, padx=(0, 10))
+        self.video_start_btn.pack(side=tk.LEFT, padx=(10, 10))
 
         self.video_stop_btn = tk.Button(
             btn_frame, text=self._t("stop"),
@@ -610,7 +604,7 @@ class TwitterDownloaderGUI:
         # Info Section
         info_frame = tk.LabelFrame(self.bookmark_frame, text="", bg=Colors.BG_CARD,
                                    font=("Segoe UI", 11, "bold"), fg=Colors.PRIMARY)
-        info_frame.pack(fill=tk.X, pady=(0, 10), padx=15)
+        info_frame.pack(fill=tk.X, pady=(0, 10), padx=5)
 
         self.info_label = tk.Label(info_frame, text=self._t("how_to_use"),
                                    font=("Segoe UI", 11, "bold"),
@@ -634,7 +628,7 @@ class TwitterDownloaderGUI:
         # Settings Section
         settings_frame = tk.LabelFrame(self.bookmark_frame, text="", bg=Colors.BG_CARD,
                                        font=("Segoe UI", 11, "bold"), fg=Colors.PRIMARY)
-        settings_frame.pack(fill=tk.X, pady=(0, 10), padx=15)
+        settings_frame.pack(fill=tk.X, pady=(0, 10), padx=5)
 
         self.settings_label2 = tk.Label(settings_frame, text=self._t("settings"),
                                         font=("Segoe UI", 11, "bold"),
@@ -649,7 +643,7 @@ class TwitterDownloaderGUI:
                                        bg=Colors.BG_CARD, fg=Colors.TEXT_PRIMARY)
         self.save_to_label2.pack(side=tk.LEFT)
         self.bookmark_output_var = tk.StringVar(value=self.default_output_dir)
-        tk.Entry(dir_row, textvariable=self.bookmark_output_var, width=35,
+        tk.Entry(dir_row, textvariable=self.bookmark_output_var, width=30,
                 font=("Segoe UI", 10), bg=Colors.BG_INPUT, fg=Colors.TEXT_PRIMARY,
                 insertbackground=Colors.TEXT_PRIMARY, relief=tk.FLAT).pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
 
@@ -733,7 +727,7 @@ class TwitterDownloaderGUI:
 
         # Action buttons
         btn_frame = tk.Frame(self.bookmark_frame, bg=Colors.BG_CARD)
-        btn_frame.pack(fill=tk.X, padx=15, pady=(0, 15))
+        btn_frame.pack(fill=tk.X, padx=5, pady=(0, 10))
 
         self.bookmark_start_btn = tk.Button(
             btn_frame, text=self._t("start"),
@@ -748,7 +742,7 @@ class TwitterDownloaderGUI:
             cursor="hand2",
             command=self.start_bookmark_download
         )
-        self.bookmark_start_btn.pack(side=tk.LEFT, padx=(0, 10))
+        self.bookmark_start_btn.pack(side=tk.LEFT, padx=(10, 10))
 
         self.bookmark_stop_btn = tk.Button(
             btn_frame, text=self._t("stop"),
@@ -767,7 +761,7 @@ class TwitterDownloaderGUI:
         self.bookmark_stop_btn.pack(side=tk.LEFT)
 
     def _create_log_area(self, parent):
-        """Create log output area - larger and resizable"""
+        """Create log output area"""
         log_frame = tk.LabelFrame(parent, text="", bg=Colors.BG_CARD,
                                   font=("Segoe UI", 11, "bold"), fg=Colors.PRIMARY)
         log_frame.pack(fill=tk.BOTH, expand=True, pady=(15, 0))
@@ -777,10 +771,9 @@ class TwitterDownloaderGUI:
                                   bg=Colors.BG_CARD, fg=Colors.PRIMARY)
         self.log_label.pack(anchor=tk.W, padx=10, pady=(5, 0))
 
-        # Larger log area with better scrolling
         self.log_text = scrolledtext.ScrolledText(
             log_frame,
-            height=12,  # Increased height
+            height=10,
             wrap=tk.WORD,
             font=("Consolas", 10),
             bg=Colors.BG_INPUT,
